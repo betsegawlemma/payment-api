@@ -1,0 +1,85 @@
+### 1. Create Payment (Success)
+
+POST http://localhost:8080/payments
+Content-Type: application/json
+Idempotency-Key: unique-idem-key-1
+
+{
+  "orderId": "order-001",
+  "amount": { "value": "100.00", "currency": "USD" },
+  "paymentMethod": {
+    "type": "CREDIT_CARD",
+    "cardNumber": "4242424242424242",
+    "expirationMonth": "12",
+    "expirationYear": "25",
+    "cvv": "123",
+    "cardHolderName": "John Doe"
+  },
+  "customerId": "customer-xyz",
+  "description": "Test purchase",
+  "callbackUrl": "https://client.com/payment-status-webhook",
+  "idempotencyKey": "unique-idem-key-1"
+}
+
+###
+
+### 2. Create Payment (Duplicate Idempotency Key)
+
+POST http://localhost:8080/payments
+Content-Type: application/json
+Idempotency-Key: unique-idem-key-1
+
+{
+  "orderId": "order-001",
+  "amount": { "value": "100.00", "currency": "USD" },
+  "paymentMethod": {
+    "type": "CREDIT_CARD",
+    "cardNumber": "4242424242424242",
+    "expirationMonth": "12",
+    "expirationYear": "25",
+    "cvv": "123",
+    "cardHolderName": "John Doe"
+  },
+  "customerId": "customer-xyz",
+  "description": "Test purchase",
+  "callbackUrl": "https://client.com/payment-status-webhook",
+  "idempotencyKey": "unique-idem-key-1"
+}
+
+###
+
+### 3. Create Payment (Invalid JSON - missing required field)
+
+POST http://localhost:8080/payments
+Content-Type: application/json
+Idempotency-Key: unique-idem-key-2
+
+{
+  "amount": { "value": "100.00", "currency": "USD" },
+  "paymentMethod": {
+    "type": "CREDIT_CARD",
+    "cardNumber": "4242424242424242",
+    "expirationMonth": "12",
+    "expirationYear": "25",
+    "cvv": "123",
+    "cardHolderName": "John Doe"
+  },
+  "customerId": "customer-xyz",
+  "description": "Test purchase",
+  "callbackUrl": "https://client.com/payment-status-webhook",
+  "idempotencyKey": "unique-idem-key-2"
+}
+
+###
+
+### 4. Check Payment Status (Success)
+
+GET http://localhost:8080/payments/order-001
+
+###
+
+### 5. Check Payment Status (Not Found)
+
+GET http://localhost:8080/payments/nonexistent-order
+
+###
