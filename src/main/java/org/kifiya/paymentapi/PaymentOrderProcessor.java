@@ -17,8 +17,8 @@ public class PaymentOrderProcessor {
     private final ProviderAdapter providerAdapter;
     private final PaymentOutboxHelper outboxHelper;
 
-    private static final int    MAX_RETRIES    = 5;
-    private static final long   BASE_DELAY_MS  = 1_000L;
+    private static final int MAX_RETRIES = 5;
+    private static final long BASE_DELAY_MS = 1_000L;
 
     @Transactional
     public void processOrder(Long paymentId) {
@@ -34,28 +34,14 @@ public class PaymentOrderProcessor {
             return;
         }
 
-        // Rate limiter blocks until permit is available
-        boolean permit = rateLimiter.tryAcquire();
-        while (!permit) {
-            try {
-                Thread.sleep(100L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            permit = rateLimiter.tryAcquire();
-        }
-
-        PaymentResponse resp = providerAdapter.processPayment(order);
-        ProviderStatus  st   = ProviderStatus.from(resp.getStatus());
+        PaymentResponse resp = attemptPayment(order);
+        ProviderStatus st = ProviderStatus.from(resp.getStatus());
 
         if (st == ProviderStatus.SUCCESS) {
             outboxHelper.updateAndOutbox(order, PaymentStatus.COMPLETED, resp.getMessage());
-        }
-        else if (st.isRetryable()) {
+        } else if (st.isRetryable()) {
             retryExponential(order);
-        }
-        else {
+        } else {
             outboxHelper.updateAndOutbox(order, PaymentStatus.FAILED, resp.getMessage());
         }
     }
@@ -63,8 +49,10 @@ public class PaymentOrderProcessor {
     private void retryExponential(PaymentOrder order) {
         for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             sleepBackoff(attempt);
-            PaymentResponse resp = providerAdapter.processPayment(order);
+
+            PaymentResponse resp = attemptPayment(order);
             ProviderStatus st = ProviderStatus.from(resp.getStatus());
+
             if (st == ProviderStatus.SUCCESS) {
                 outboxHelper.updateAndOutbox(order, PaymentStatus.COMPLETED, resp.getMessage());
                 return;
@@ -75,6 +63,20 @@ public class PaymentOrderProcessor {
             }
         }
         outboxHelper.updateAndOutbox(order, PaymentStatus.FAILED, "Max retries exceeded");
+    }
+
+    private PaymentResponse attemptPayment(PaymentOrder order) {
+        boolean permit = rateLimiter.tryAcquire();
+        while (!permit) {
+            try {
+                Thread.sleep(100L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            permit = rateLimiter.tryAcquire();
+        }
+        return providerAdapter.processPayment(order);
     }
 
     private void sleepBackoff(int attempt) {
