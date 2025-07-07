@@ -1,30 +1,51 @@
-version: '3.9'
 services:
-  postgres:
-    image: postgres:17
-    container_name: postgres
+  payment-api:
+    build: .
+    image: payment-api:latest
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: payment_user
+      SPRING_DATASOURCE_PASSWORD: payment_pass
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_DATA_REDIS_HOST: ${SPRING_REDIS_HOST:-redis}
+      SPRING_DATA_REDIS_PORT: ${SPRING_REDIS_PORT:-6379}
+      PAYMENTS_QUEUE: payments-queue
+      PAYMENTS_EVENTS_EXCHANGE: payments-events
+      PAYMENTS_RATE_LIMIT: 2
+      PAYMENTS_PROVIDER_URL: http://localhost:8081/api/payments
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - rabbitmq
+      - redis
+    restart: always
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: payment_db
       POSTGRES_USER: payment_user
       POSTGRES_PASSWORD: payment_pass
-      POSTGRES_DB: payment_db
     ports:
       - "5432:5432"
     restart: always
 
-  redis:
-    image: redis:7.2
-    container_name: redis
-    ports:
-      - "6379:6379"
-    restart: always
-
   rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: rabbitmq
+    image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
       - "5672:5672"
       - "15672:15672"
-    restart: always
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
