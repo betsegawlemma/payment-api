@@ -22,4 +22,9 @@ public class AmqpConfig {
     public Exchange eventsExchange() {
         return ExchangeBuilder.fanoutExchange(exchangeName).durable(true).build();
     }
+
+    @Bean
+    public Binding binding(Queue paymentsQueue, Exchange eventsExchange) {
+        return BindingBuilder.bind(paymentsQueue).to(eventsExchange).with("").noargs();
+    }
 }
