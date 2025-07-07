@@ -1,50 +1,85 @@
-# Step-by-Step Setup & Run Instructions
+# Payment API
 
-## Prerequisites
-
-- Java 21+
-- Docker and Docker Compose
-- Gradle (or use the Gradle Wrapper)
+This project is a robust, event-driven payment processing API built with Java (Spring Boot 3, Java 21+), leveraging PostgreSQL 17, RabbitMQ, and Redis. It follows best practices for idempotency, transactional outbox/eventing, global rate limiting, and extensibility for payment provider integration.
 
 ---
 
-## 1. Clone & Build
+## Architecture Overview
+
+- **Spring Boot 3 (Java 21+)**: Main application framework.
+- **PostgreSQL 17**: Persistent storage for payments, idempotency keys, and outbox events.
+- **RabbitMQ**: Durable queue for payment order processing and a fanout exchange for domain events.
+- **Redis**: Implements a distributed token-bucket algorithm for global 2 TPS rate limiting.
+- **Outbox Pattern**: Ensures reliable event publication after payment terminal state.
+- **Extensible Provider Adapter**: Easily integrates new payment providers.
+
+---
+
+## Main Components
+
+- **`/src/main/java/com/kifiya/paymentapi`**: Core application code.
+    - **Controllers**: Expose REST endpoints for payment creation and status fetch.
+    - **Workers**: Listen on RabbitMQ queue, process payments with retry and rate limiting.
+    - **Repositories/Entities**: Models for payments, idempotency, outbox.
+    - **Adapters**: Pluggable integration with external payment providers.
+    - **Rate Limiter**: Redis-backed, guarantees max 2 TPS globally.
+    - **Outbox Publisher**: Publishes payment events to RabbitMQ exchange.
+- **Configuration**:
+    - **`application.properties`**: DB, Redis, RabbitMQ, and provider endpoint config.
+    - **`docker-compose.yml`**: Spins up PostgreSQL, Redis, and RabbitMQ for local development.
+    - **`build.gradle.kts`**: Gradle Kotlin DSL for dependency management.
+- **API Endpoints**:
+    - `POST /payments` — Create a payment (with idempotency enforcement).
+    - `GET /payments/{orderId}` — Check payment status.
+
+---
+
+## Step-by-Step Setup & Run Instructions
+
+### Prerequisites
+
+- Java 21+
+- Docker & Docker Compose
+- Gradle (or use provided Gradle Wrapper)
+
+---
+
+### 1. Clone & Build
 
 ```bash
-git clone <repo-url>
-cd <repo-folder>
+git clone https://github.com/betsegawlemma/payment-api.git
+cd payment-api
 ./gradlew build
 ```
 
 ---
 
-## 2. Start Infrastructure (Postgres, Redis, RabbitMQ)
+### 2. Start Dependencies (Postgres, Redis, RabbitMQ)
 
 ```bash
 docker-compose up -d
 ```
-
-- **PostgreSQL:** localhost:5432 (user: payment_user, pass: payment_pass, db: payment_db)
-- **Redis:** localhost:6379
-- **RabbitMQ:** localhost:5672 (UI at http://localhost:15672, guest/guest)
+- **PostgreSQL:** `localhost:5432` (`payment_user` / `payment_pass` / `payment_db`)
+- **Redis:** `localhost:6379`
+- **RabbitMQ:** `localhost:5672` (UI: [http://localhost:15672](http://localhost:15672), user: guest/guest)
 
 ---
 
-## 3. Run the Spring Boot Application
+### 3. Run the Application
 
 ```bash
 ./gradlew bootRun
 ```
 or
 ```bash
-java -jar build/libs/payments-0.0.1-SNAPSHOT.jar
+java -jar build/libs/payment-api-0.0.1-SNAPSHOT.jar
 ```
 
 ---
 
-## 4. Test API Endpoints
+### 4. Test the API
 
-### Create Payment (`POST /payments`)
+#### Create Payment
 
 ```bash
 curl -X POST http://localhost:8080/payments \
@@ -68,7 +103,7 @@ curl -X POST http://localhost:8080/payments \
   }'
 ```
 
-### Get Payment Status (`GET /payments/{orderId}`)
+#### Check Payment Status
 
 ```bash
 curl http://localhost:8080/payments/order-001
@@ -76,32 +111,24 @@ curl http://localhost:8080/payments/order-001
 
 ---
 
-## 5. Simulate External Payment Provider
+### 5. Simulate External Payment Provider
 
-- Run your existing simulated provider at `http://localhost:8081/api/payments`.
-- You may change the provider URL via `application.properties` (`payments.provider.url`).
-
----
-
-## 6. Scaling & Events
-
-- **RabbitMQ queue**: Durable, supports multiple worker instances.
-- **Events Exchange**: All terminal state changes (COMPLETED/FAILED) are published here.
-- Add more Spring Boot app instances to scale worker/payment processing.
+- Start your payment provider simulator at `http://localhost:8081/api/payments` (or update `payments.provider.url` in `application.properties`).
 
 ---
 
-## 7. Rate Limit
+### 6. Scaling & Events
 
-- The Redis-backed bucket ensures a max of 2 payment requests per second **across the whole system**.
-
----
-
-## 8. Customize
-
-- Add more payment providers by implementing `ProviderAdapter`.
-- Extend outbox payloads/events as needed.
+- Run more app instances for horizontal scaling; rate limit is enforced globally via Redis.
+- Events for terminal payment states are published to RabbitMQ's event exchange, enabling reliable downstream processing.
 
 ---
 
-**You now have a robust, scalable, event-driven payment processing Proof-of-Concept!**# payment-api
+### 7. Notes
+
+- **Idempotency**: All payment requests must include a unique `Idempotency-Key` header.
+- **Rate Limiting**: System-wide, never exceeds 2 payment requests/sec to the provider.
+- **Extensibility**: Add new payment provider adapters by implementing the `ProviderAdapter` interface.
+- **Transactional Outbox**: Terminal status changes and event emission are atomic.
+
+---
