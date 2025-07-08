@@ -17,20 +17,20 @@ This project is a robust, event-driven payment processing API built with Java (S
 
 ## Main Components
 
-- **`/src/main/java/com/kifiya/paymentapi`**: Core application code.
-    - **Controllers**: Expose REST endpoints for payment creation and status fetch.
-    - **Workers**: Listen on RabbitMQ queue, process payments with retry and rate limiting.
-    - **Repositories/Entities**: Models for payments, idempotency, outbox.
-    - **Adapters**: Pluggable integration with external payment providers.
-    - **Rate Limiter**: Redis-backed, guarantees max 2 TPS globally.
-    - **Outbox Publisher**: Publishes payment events to RabbitMQ exchange.
+- **`/src/main/java/org/kifiya/paymentapi`**: Core application code.
+  - **Controllers**: Expose REST endpoints for payment creation and status fetch.
+  - **Workers**: Listen on RabbitMQ queue, process payments with retry and rate limiting.
+  - **Repositories/Entities**: Models for payments, idempotency, outbox.
+  - **Adapters**: Pluggable integration with external payment providers.
+  - **Rate Limiter**: Redis-backed, guarantees max 2 TPS globally.
+  - **Outbox Publisher**: Publishes payment events to RabbitMQ exchange.
 - **Configuration**:
-    - **`application.properties`**: DB, Redis, RabbitMQ, and provider endpoint config.
-    - **`docker-compose.yml`**: Spins up PostgreSQL, Redis, and RabbitMQ for local development.
-    - **`build.gradle.kts`**: Gradle Kotlin DSL for dependency management.
+  - **`application.properties`**: DB, Redis, RabbitMQ, and provider endpoint config.
+  - **`docker-compose.yml`**: Spins up PostgreSQL, Redis, and RabbitMQ for local development.
+  - **`build.gradle.kts`**: Gradle Kotlin DSL for dependency management.
 - **API Endpoints**:
-    - `POST /payments` — Create a payment (with idempotency enforcement).
-    - `GET /payments/{orderId}` — Check payment status.
+  - `POST /payments` — Create a payment (with idempotency enforcement).
+  - `GET /payments/{orderId}` — Check payment status.
 
 ---
 
@@ -54,30 +54,31 @@ cd payment-api
 
 ---
 
-### 2. Start Dependencies (Postgres, Redis, RabbitMQ)
+### 2. Start the Application and Dependencies
+
+The easiest way to run everything is with Docker Compose:
 
 ```bash
-docker-compose up -d
+docker compose up --build
 ```
+
+- This will launch the application alongside PostgreSQL, Redis, and RabbitMQ.
 - **PostgreSQL:** `localhost:5432` (`payment_user` / `payment_pass` / `payment_db`)
 - **Redis:** `localhost:6379`
 - **RabbitMQ:** `localhost:5672` (UI: [http://localhost:15672](http://localhost:15672), user: guest/guest)
+- **API:** `localhost:8080`
 
----
-
-### 3. Run the Application
+Alternatively, if you want to start only the dependencies and run the application locally:
 
 ```bash
-./gradlew bootRun
-```
-or
-```bash
-java -jar build/libs/payment-api-0.0.1-SNAPSHOT.jar
+docker compose up -d   # Start dependencies only
+./gradlew build        # Build the app
+./gradlew bootRun      # Run the app
 ```
 
 ---
 
-### 4. Test the API
+### 3. Test the API
 
 #### Create Payment
 
@@ -111,20 +112,20 @@ curl http://localhost:8080/payments/order-001
 
 ---
 
-### 5. Simulate External Payment Provider
+### 4. Simulate External Payment Provider
 
 - Start your payment provider simulator at `http://localhost:8081/api/payments` (or update `payments.provider.url` in `application.properties`).
 
 ---
 
-### 6. Scaling & Events
+### 5. Scaling & Events
 
 - Run more app instances for horizontal scaling; rate limit is enforced globally via Redis.
 - Events for terminal payment states are published to RabbitMQ's event exchange, enabling reliable downstream processing.
 
 ---
 
-### 7. Notes
+### 6. Notes
 
 - **Idempotency**: All payment requests must include a unique `Idempotency-Key` header.
 - **Rate Limiting**: System-wide, never exceeds 2 payment requests/sec to the provider.
@@ -132,3 +133,7 @@ curl http://localhost:8080/payments/order-001
 - **Transactional Outbox**: Terminal status changes and event emission are atomic.
 
 ---
+
+## License
+
+MIT License
