@@ -1,6 +1,8 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.util;
 
 import lombok.RequiredArgsConstructor;
+import org.kifiya.paymentapi.dto.PaymentResponse;
+import org.kifiya.paymentapi.model.PaymentOrder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;

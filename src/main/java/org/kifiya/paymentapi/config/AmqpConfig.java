@@ -1,4 +1,4 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.config;
 
 import org.springframework.amqp.core.*;
 import org.springframework.beans.factory.annotation.Value;

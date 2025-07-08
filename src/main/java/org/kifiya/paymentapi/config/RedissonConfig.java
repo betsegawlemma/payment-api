@@ -1,4 +1,4 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.config;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;

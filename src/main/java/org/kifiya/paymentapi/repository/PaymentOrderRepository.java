@@ -1,5 +1,6 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.repository;
 
+import org.kifiya.paymentapi.model.PaymentOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

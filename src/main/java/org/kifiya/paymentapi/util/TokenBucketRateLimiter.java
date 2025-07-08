@@ -1,4 +1,4 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.util;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

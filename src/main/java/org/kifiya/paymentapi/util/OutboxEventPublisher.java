@@ -1,6 +1,8 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.util;
 
 import lombok.RequiredArgsConstructor;
+import org.kifiya.paymentapi.model.OutboxEvent;
+import org.kifiya.paymentapi.repository.OutboxEventRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;

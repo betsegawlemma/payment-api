@@ -1,4 +1,4 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.model;
 
 public enum PaymentStatus {
     PENDING,

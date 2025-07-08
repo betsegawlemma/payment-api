@@ -1,4 +1,4 @@
-package org.kifiya.paymentapi;
+package org.kifiya.paymentapi.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
